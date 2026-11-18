@@ -1,8 +1,8 @@
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from app.reports import generate_report
 from app.processor import process_reviews
-from app.database import save_review, get_reviews
+from app.database import save_review, get_reviews, get_review_by_id
 from pydantic import BaseModel,Field
 
 class ReviewRequest(BaseModel):
@@ -44,14 +44,26 @@ def analyze(request: ReviewRequest):
     return result
 
 @app.get("/reviews")
-def list_reviews(sentiment: str | None = None, limit: int=10, offset: int=0):
+def list_reviews(
+    sentiment: str | None = None,
+    limit: int=Query(default=10, ge=1,le=100),
+    offset: int=Query(default=0, ge=0)
+    ):
 
     if sentiment is not None:
         sentiment = sentiment.strip()
 
-    results = get_reviews(sentiment,limit,offset)
+    return  get_reviews(sentiment,limit,offset)
 
-    print("Veritabanından gelen: ", results)
 
-    return results
+@app.get("/reviews/{review_id}")
+def get_review(review_id: int):
 
+    result = get_review_by_id(review_id)
+
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail = "Yorum bulunamadı.")
+
+    return result

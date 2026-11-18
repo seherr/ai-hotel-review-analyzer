@@ -89,3 +89,26 @@ def get_negative_reviews():
     finally: 
         connection.close()
 
+def get_review_by_id(review_id):
+
+    connection = sqlite3.connect(DB_PATH)
+    connection.row_factory = sqlite3.Row
+
+    try:
+
+        cursor = connection.execute(
+            """
+            SELECT * FROM reviews
+            WHERE id = ?
+
+            """,
+            (review_id,)
+        )
+        row = cursor.fetchone()
+
+        if row is None:
+            return None
+        return dict(row)
+
+    finally:
+        connection.close()
