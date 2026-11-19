@@ -2,7 +2,7 @@
 from fastapi import FastAPI, HTTPException, Query
 from app.reports import generate_report
 from app.processor import process_reviews
-from app.database import save_review, get_reviews, get_review_by_id
+from app.database import save_review, get_reviews, get_review_by_id, delete_review_by_id
 from pydantic import BaseModel,Field
 
 class ReviewRequest(BaseModel):
@@ -67,3 +67,12 @@ def get_review(review_id: int):
             detail = "Yorum bulunamadı.")
 
     return result
+
+@app.delete("/reviews/{review_id}")
+def delete_review(review_id: int):
+    if not delete_review_by_id(review_id):
+        raise HTTPException(
+            status_code=404,
+            detail = "Yorum bulunamadı."
+        )
+    return {"deleted_id": review_id}

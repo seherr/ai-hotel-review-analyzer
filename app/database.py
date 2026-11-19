@@ -112,3 +112,19 @@ def get_review_by_id(review_id):
 
     finally:
         connection.close()
+
+def delete_review_by_id(review_id: int) -> bool:
+    connection = sqlite3.connect(DB_PATH)
+
+    try:
+        cursor = connection.execute(
+            """
+            DELETE FROM reviews
+            WHERE id = ?
+            """,
+            (review_id,),
+        )
+        connection.commit()
+        return cursor.rowcount > 0
+    finally:
+        connection.close()
