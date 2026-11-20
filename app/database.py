@@ -128,3 +128,27 @@ def delete_review_by_id(review_id: int) -> bool:
         return cursor.rowcount > 0
     finally:
         connection.close()
+
+def upgrade_review_by_id(review_id: int, result: dict) -> bool:
+    connection = sqlite3.connect(DB_PATH)
+
+    try:
+        cursor = connection.execute(
+            """
+            UPDATE reviews
+            SET review = ?, sentiment = ?, confidence = ?, status = ?
+            WHERE id = ?
+            """,
+            (
+                result["review"],
+                result["sentiment"],
+                result["confidence"],
+                result["status"],
+                review_id,
+            ),
+        )
+
+        connection.commit()
+        return cursor.rowcount > 0
+    finally:
+        connection.close()

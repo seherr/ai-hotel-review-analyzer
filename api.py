@@ -2,11 +2,14 @@
 from fastapi import FastAPI, HTTPException, Query
 from app.reports import generate_report
 from app.processor import process_reviews
-from app.database import save_review, get_reviews, get_review_by_id, delete_review_by_id
+from app.database import save_review, get_reviews, get_review_by_id, delete_review_by_id, upgrade_review_by_id
 from pydantic import BaseModel,Field
 
 class ReviewRequest(BaseModel):
     review: str = Field(min_length=1)
+
+class ReviewUpdateRequest(BaseModel):
+    text: str
 
 app = FastAPI()
 
@@ -76,3 +79,21 @@ def delete_review(review_id: int):
             detail = "Yorum bulunamadı."
         )
     return {"deleted_id": review_id}
+
+@app.patch("/reviews/{review_id}")
+def update_review(review_id: int, request: ReviewUpdateRequest):
+    text = request.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Yorum boş olamaz.")
+
+    if get_review_by_id(review_id) is None:
+        raise HTTPException(status_code=404, detail="Yorum bulunamadı.")
+
+    result = process_reviews([text])[0]
+    if result["status"] == "failed":
+        raise HTTPException(status_code=503, detail="Yorum analiz edilemedi.")
+
+    if not upgrade_review_by_id(review_id, result):
+        raise HTTPException(status_code=404, detail="Yorum bulunamadı.")
+
+    return {"updated_id": review_id, "text": result["review"]}
