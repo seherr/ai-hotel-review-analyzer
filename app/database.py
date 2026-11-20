@@ -50,6 +50,7 @@ def get_reviews(sentiment = None, limit = 10, offset = 0):
         if sentiment is None:
             cursor = connection.execute(
                 """SELECT * From reviews
+                   ORDER BY id
                    LIMIT ?
                    OFFSET  ?
                 """,

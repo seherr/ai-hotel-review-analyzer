@@ -1,8 +1,16 @@
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query
 from app.reports import generate_report
 from app.processor import process_reviews
-from app.database import save_review, get_reviews, get_review_by_id, delete_review_by_id, upgrade_review_by_id
+from app.database import (
+    delete_review_by_id,
+    get_review_by_id,
+    get_reviews,
+    init_db,
+    save_review,
+    upgrade_review_by_id,
+)
 from pydantic import BaseModel,Field
 
 class ReviewRequest(BaseModel):
@@ -11,7 +19,13 @@ class ReviewRequest(BaseModel):
 class ReviewUpdateRequest(BaseModel):
     text: str
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def home():
@@ -33,17 +47,15 @@ def analyze(request: ReviewRequest):
 
         )
 
-    results = process_reviews([request.review])
-    result = results[0]
-    save_review(result)
+    result = process_reviews([review])[0]
 
     if result["status"] == "failed":
         raise HTTPException(
-            status = 503,
-            detail = "Yorum analiz edilmedi."
+            status_code=503,
+            detail="Yorum analiz edilemedi.",
         )
 
-
+    save_review(result)
     return result
 
 @app.get("/reviews")
